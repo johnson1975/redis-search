@@ -1,27 +1,34 @@
-var server = require("http").createServer(function (request, response) {
-    response.writeHead(200, {'Content-Type': 'text/plain'});
-    response.end("hello world\n");
-}).listen(3000);
-console.log("listener in port 3000");
+var restify = require('restify');
 
-var Hello =  require("./hello.js");
-var hello = new Hello();
-hello.setName("johnson");
-hello.sayHello("world");
+var server = restify.createServer({
+    name: 'redis-search',
+    version: '1.0.0'
+});
+server.use(restify.acceptParser(server.acceptable));
+server.use(restify.queryParser());
+server.use(restify.bodyParser());
 
+var search = require('./search');
 
-var EventEmitter = require("events").EventEmitter;
-var event = new EventEmitter();
-event.on("sendEvent", function(data) {
-    console.log(data);
+server.post('/index', function (req, res, next) {
+    search.createIndex(req.params.text, req.params.dataType, req.params.correspondingId);
+    return next();
 });
 
 
-setTimeout(function() {
-    event.emit("sendEvent", "helloworld")
-}, 1000);
+server.post('/index/remove', function (req, res, next) {
+    search.removeIndex(req.params.text, req.params.dataType, reg.params.correspondingId);
+    return next();
+});
 
-var search = require('./search.js');
-search.search("何桥", 'product', function (err, response) {
-    console.log(response);
+server.get('/search/:dataType/:text', function (req, res, next) {
+    search.search(req.params.text, req.params.dataType, function (err, response){
+        res.send(response);
+        return next();
+    })
+});
+
+
+server.listen(8080, function () {
+    console.log('%s listening at %s', server.name, server.url);
 });
